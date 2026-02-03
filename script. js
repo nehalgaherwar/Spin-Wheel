@@ -1,0 +1,88 @@
+const canvas = document.getElementById("wheel");
+const ctx = canvas.getContext("2d");
+
+const spinBtn = document.getElementById("spinBtn");
+const resultText = document.getElementById("result");
+
+const prizes = ["₹10", "₹50", "₹100", "Try Again", "₹200", "Bonus"];
+const colors = ["#ff4d4d", "#4d79ff", "#4dff4d", "#ffd11a", "#ff66cc", "#00cccc"];
+
+const numSlices = prizes.length;
+const sliceAngle = (2 * Math.PI) / numSlices;
+
+let currentAngle = 0;
+let spinning = false;
+
+// Draw Wheel
+function drawWheel() {
+  for (let i = 0; i < numSlices; i++) {
+    const startAngle = i * sliceAngle;
+    const endAngle = startAngle + sliceAngle;
+
+    ctx.beginPath();
+    ctx.moveTo(200, 200);
+    ctx.arc(200, 200, 200, startAngle, endAngle);
+    ctx.fillStyle = colors[i];
+    ctx.fill();
+    ctx.stroke();
+
+    // Text
+    ctx.save();
+    ctx.translate(200, 200);
+    ctx.rotate(startAngle + sliceAngle / 2);
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#000";
+    ctx.font = "bold 18px Arial";
+    ctx.fillText(prizes[i], 170, 10);
+    ctx.restore();
+  }
+}
+
+drawWheel();
+
+// Spin Wheel
+spinBtn.addEventListener("click", () => {
+  if (spinning) return;
+
+  spinning = true;
+  resultText.innerText = "Result: Spinning...";
+
+  const spinTime = 3000; // 3 sec
+  const spinAngle = Math.random() * 5000 + 2000; // random spin
+
+  const start = performance.now();
+
+  function animate(time) {
+    const elapsed = time - start;
+    const progress = Math.min(elapsed / spinTime, 1);
+
+    // Ease out effect
+    const easeOut = 1 - Math.pow(1 - progress, 3);
+
+    currentAngle = (spinAngle * easeOut) * (Math.PI / 180);
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(200, 200);
+    ctx.rotate(currentAngle);
+    ctx.translate(-200, -200);
+    drawWheel();
+    ctx.restore();
+
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      spinning = false;
+
+      // Find prize
+      const finalAngle = (currentAngle % (2 * Math.PI));
+      const index = Math.floor((2 * Math.PI - finalAngle) / sliceAngle) % numSlices;
+
+      const prize = prizes[index];
+      resultText.innerText = "Result: " + prize;
+      alert("🎉 You Won: " + prize);
+    }
+  }
+
+  requestAnimationFrame(animate);
+});
